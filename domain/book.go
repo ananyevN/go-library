@@ -4,6 +4,7 @@ import (
 	"context"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../mocks/mock_repository/mock_$GOFILE
 type Book struct {
 	ID        int    `json:"id"`
 	Title     string `json:"title" validate:"required"`
