@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	"github.com/bxcodec/go-clean-arch/domain"
+	"github.com/bxcodec/library/domain"
 	"time"
 )
 

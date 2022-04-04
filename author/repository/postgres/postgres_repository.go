@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/bxcodec/go-clean-arch/domain"
+	"github.com/bxcodec/library/domain"
 )
 
 type postgresAuthorRepo struct {

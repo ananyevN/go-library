@@ -1,7 +1,7 @@
 package http
 
 import (
-	"github.com/bxcodec/go-clean-arch/domain"
+	"github.com/bxcodec/library/domain"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"

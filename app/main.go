@@ -3,10 +3,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/bxcodec/go-clean-arch/author/repository/postgres"
-	"github.com/bxcodec/go-clean-arch/book/delivery/http"
-	_book_repository "github.com/bxcodec/go-clean-arch/book/repository/postgres"
-	"github.com/bxcodec/go-clean-arch/book/usecase"
+	"github.com/bxcodec/library/author/repository/postgres"
+	"github.com/bxcodec/library/book/delivery/http"
+	_book_repository "github.com/bxcodec/library/book/repository/postgres"
+	"github.com/bxcodec/library/book/usecase"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq" // <------------ here
 	"log"

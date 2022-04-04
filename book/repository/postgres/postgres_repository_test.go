@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/bxcodec/go-clean-arch/domain"
+	"github.com/bxcodec/library/domain"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 	"testing"
