@@ -67,29 +67,27 @@ func (p *postgresBookRepository) Fetch(ctx context.Context, num int) (res []doma
 }
 
 func (p *postgresBookRepository) Add(ctx context.Context, book *domain.Book) (err error) {
-	stmt, err := p.Conn.PrepareContext(ctx, `INSERT into book (title, content, author_id, updated_at, created_at)
-                                                   VALUES ($1 , $2 , $3 , $4 , $5) RETURNING id`)
+	res, err := p.Conn.ExecContext(ctx, `INSERT INTO book (title, content, author_id, updated_at, created_at) VALUES ($1, $2, $3, $4, $5)`,
+		book.Title, book.Content, book.Author.ID, book.UpdatedAt, book.CreatedAt)
 	if err != nil {
 		return
 	}
 
-	id := 0
-	err = stmt.QueryRow(book.Title, book.Content, book.Author.ID, book.UpdatedAt, book.CreatedAt).Scan(&id)
+	rowsAffected, err := res.RowsAffected()
 	if err != nil {
+		return err
+	}
+	if rowsAffected != 1 {
+		err = fmt.Errorf("Weird  Behavior. Total Affected: %d", rowsAffected)
 		return
 	}
-	book.ID = id
+
 	return
 }
 
 func (p *postgresBookRepository) Delete(ctx context.Context, id int) (err error) {
-	query := fmt.Sprintf("DELETE FROM book WHERE id = %d", id)
-	stmt, err := p.Conn.PrepareContext(ctx, query)
-	if err != nil {
-		return
-	}
+	res, err := p.Conn.ExecContext(ctx, `DELETE FROM book WHERE id = $1`, id)
 
-	res, err := stmt.ExecContext(ctx)
 	if err != nil {
 		return
 	}
@@ -105,15 +103,8 @@ func (p *postgresBookRepository) Delete(ctx context.Context, id int) (err error)
 }
 
 func (p *postgresBookRepository) Update(ctx context.Context, book *domain.Book) (err error) {
-	query := fmt.Sprintf("Update  book SET title = '%s', content = '%s', author_id = %d, updated_at = '%s', created_at = '%s'"+
-		" WHERE id = %d",
+	res, err := p.Conn.ExecContext(ctx, `UPDATE  book SET title = $1, content = $2, author_id = $3, updated_at = $4, created_at = $5 WHERE id = $6`,
 		book.Title, book.Content, book.Author.ID, book.UpdatedAt, book.CreatedAt, book.ID)
-	stmt, err := p.Conn.PrepareContext(ctx, query)
-	if err != nil {
-		return
-	}
-
-	res, err := stmt.ExecContext(ctx)
 	if err != nil {
 		return
 	}

@@ -23,8 +23,9 @@ type BookHandler struct {
 func NewBookHandler(e *echo.Echo, us domain.BookUseCase) {
 	handler := &BookHandler{BUseCase: us}
 	e.GET("/books", handler.FetchBook)
-	e.POST("/books", handler.Add)
 	e.GET("/books/:id", handler.GetById)
+	e.POST("/books", handler.Add)
+	e.POST("/book", handler.Update)
 	e.DELETE("/books/:id", handler.Delete)
 }
 
@@ -81,6 +82,25 @@ func (h BookHandler) Add(c echo.Context) error {
 
 	ctx := c.Request().Context()
 	err = h.BUseCase.Add(ctx, &book)
+	if err != nil {
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+	return c.JSON(http.StatusOK, book)
+}
+
+func (h BookHandler) Update(c echo.Context) error {
+	var book domain.Book
+	err := c.Bind(&book)
+	if err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, err.Error())
+	}
+	var ok bool
+	if ok, err = isRequestValid(&book); !ok {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	ctx := c.Request().Context()
+	err = h.BUseCase.Update(ctx, &book)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
