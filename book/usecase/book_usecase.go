@@ -75,7 +75,7 @@ func (b *bookUseCase) GetById(ctx context.Context, id int) (res domain.Book, err
 	if err != nil {
 		return
 	}
-	resAuthor, err := b.authorRepo.GetByID(ctx, res.Author.ID)
+	resAuthor, err := b.authorRepo.GetById(ctx, res.Author.ID)
 	if err != nil {
 		return domain.Book{}, err
 	}

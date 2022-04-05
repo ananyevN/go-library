@@ -17,7 +17,7 @@ func NewPostgresAuthorRepository(db *sql.DB) domain.AuthorRepository {
 	}
 }
 
-func (p postgresAuthorRepo) GetByID(ctx context.Context, id int) (domain.Author, error) {
+func (p postgresAuthorRepo) GetById(ctx context.Context, id int) (domain.Author, error) {
 	query := fmt.Sprintf("SELECT id, name, created_at, updated_at FROM author WHERE id=%d", id)
 	return p.getOne(ctx, query)
 }

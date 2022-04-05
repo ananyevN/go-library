@@ -14,8 +14,8 @@ type AuthorRepository struct {
 	mock.Mock
 }
 
-// GetByID provides a mock function with given fields: ctx, id
-func (_m *AuthorRepository) GetByID(ctx context.Context, id int) (domain.Author, error) {
+// GetById provides a mock function with given fields: ctx, id
+func (_m *AuthorRepository) GetById(ctx context.Context, id int) (domain.Author, error) {
 	ret := _m.Called(ctx, id)
 
 	var r0 domain.Author

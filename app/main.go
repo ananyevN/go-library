@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/bxcodec/library/author/repository/postgres"
 	"github.com/bxcodec/library/book/delivery/http"
 	_book_repository "github.com/bxcodec/library/book/repository/postgres"
@@ -32,13 +31,12 @@ func main() {
 		}
 	}()
 
-	fmt.Println("INIT is OK")
 	e := echo.New()
 
 	authorRepo := postgres.NewPostgresAuthorRepository(dbConn)
 	bookRepo := _book_repository.NewPostgresBookRepository(dbConn)
 
-	timeoutContext := time.Duration(2) * time.Second
+	timeoutContext := time.Second
 	bookUseCase := usecase.NewBookUseCase(bookRepo, authorRepo, timeoutContext)
 
 	http.NewBookHandler(e, bookUseCase)

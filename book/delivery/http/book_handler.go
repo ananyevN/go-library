@@ -75,8 +75,7 @@ func (h BookHandler) Add(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusUnprocessableEntity, err.Error())
 	}
-	var ok bool
-	if ok, err = isRequestValid(&book); !ok {
+	if ok, err := isRequestValid(&book); !ok {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
@@ -94,8 +93,7 @@ func (h BookHandler) Update(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusUnprocessableEntity, err.Error())
 	}
-	var ok bool
-	if ok, err = isRequestValid(&book); !ok {
+	if ok, err := isRequestValid(&book); !ok {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
