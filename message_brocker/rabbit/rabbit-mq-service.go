@@ -2,6 +2,7 @@ package rabbit
 
 import (
 	"github.com/bxcodec/library/message_brocker"
+	"github.com/bxcodec/library/smtpp"
 	"github.com/streadway/amqp"
 	"log"
 )
@@ -45,6 +46,9 @@ func (r rabbitMqService) Send(content string) error {
 			Body:        []byte(content),
 		})
 	message_brocker.FailOnError(err, FailedToPublishMessage)
+
+	smtpp.SendEmail(message_brocker.Event{Content: content})
+
 	return nil
 }
 

@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"github.com/bxcodec/library/domain"
+	"github.com/bxcodec/library/message_brocker/rabbit"
 	mock_domain "github.com/bxcodec/library/mocks/mock_repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -24,7 +25,8 @@ func TestGet(t *testing.T) {
 		Return(mockListOfBook, nil).Once()
 
 	mockAuthorRepo := new(mock_domain.AuthorRepository)
-	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, time.Second*2)
+	rabbitMqService := rabbit.NewRabbitMqService("book")
+	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, rabbitMqService, time.Second*2)
 	fetch, err := usecase.Fetch(context.TODO(), 1)
 
 	assert.NoError(t, err)
@@ -44,7 +46,9 @@ func TestUpdate(t *testing.T) {
 	mockBookRepo.On("Update", mock.Anything, &mockBook).Once().Return(nil)
 
 	mockAuthorRepo := new(mock_domain.AuthorRepository)
-	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, time.Second*2)
+	rabbitMqService := rabbit.NewRabbitMqService("book")
+
+	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, rabbitMqService, time.Second*2)
 	err := usecase.Update(context.TODO(), &mockBook)
 
 	assert.NoError(t, err)
@@ -69,7 +73,9 @@ func TestDelete(t *testing.T) {
 	mockAuthorRepo.On("GetById", mock.Anything, mock.AnythingOfType("int")).Return(authorMock, nil).Once()
 	mockBookRepo.On("Delete", mock.Anything, mock.AnythingOfType("int")).Return(nil).Once()
 
-	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, time.Second*2)
+	rabbitMqService := rabbit.NewRabbitMqService("book")
+
+	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, rabbitMqService, time.Second*2)
 	err := usecase.Delete(context.TODO(), mockBook.ID)
 
 	assert.NoError(t, err)
