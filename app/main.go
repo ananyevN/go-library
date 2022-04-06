@@ -6,6 +6,7 @@ import (
 	"github.com/bxcodec/library/book/delivery/http"
 	_book_repository "github.com/bxcodec/library/book/repository/postgres"
 	"github.com/bxcodec/library/book/usecase"
+	"github.com/bxcodec/library/message_brocker/rabbit"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq" // <------------ here
 	"log"
@@ -35,9 +36,10 @@ func main() {
 
 	authorRepo := postgres.NewPostgresAuthorRepository(dbConn)
 	bookRepo := _book_repository.NewPostgresBookRepository(dbConn)
+	rabbitMqService := rabbit.NewRabbitMqService("book")
 
 	timeoutContext := time.Second
-	bookUseCase := usecase.NewBookUseCase(bookRepo, authorRepo, timeoutContext)
+	bookUseCase := usecase.NewBookUseCase(bookRepo, authorRepo, rabbitMqService, timeoutContext)
 
 	http.NewBookHandler(e, bookUseCase)
 

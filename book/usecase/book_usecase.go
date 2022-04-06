@@ -3,19 +3,23 @@ package usecase
 import (
 	"context"
 	"github.com/bxcodec/library/domain"
+	"github.com/bxcodec/library/message_brocker"
+	"log"
 	"time"
 )
 
 type bookUseCase struct {
 	bookRepo       domain.BookRepository
 	authorRepo     domain.AuthorRepository
+	messageBrocker message_brocker.MessageBroker
 	contextTimeout time.Duration
 }
 
-func NewBookUseCase(b domain.BookRepository, ar domain.AuthorRepository, timeout time.Duration) domain.BookUseCase {
+func NewBookUseCase(b domain.BookRepository, ar domain.AuthorRepository, mb message_brocker.MessageBroker, timeout time.Duration) domain.BookUseCase {
 	return &bookUseCase{
 		bookRepo:       b,
 		authorRepo:     ar,
+		messageBrocker: mb,
 		contextTimeout: timeout,
 	}
 }
@@ -80,5 +84,15 @@ func (b *bookUseCase) GetById(ctx context.Context, id int) (res domain.Book, err
 		return domain.Book{}, err
 	}
 	res.Author = resAuthor
+
+	err = b.messageBrocker.Send(res.Content)
+	if err != nil {
+		log.Println("Error while sending book to Rabbit")
+	}
+
+	_, err = b.messageBrocker.Receive()
+	if err != nil {
+		log.Println("Error while receiving book to Rabbit")
+	}
 	return
 }
