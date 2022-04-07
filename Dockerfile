@@ -8,7 +8,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN make engine
+RUN go build -o engine app/*.go
 
 # Distribution
 FROM alpine:latest

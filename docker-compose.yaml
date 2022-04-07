@@ -10,6 +10,16 @@ services:
       - "9000:9000"
     depends_on:
       - postgres
+      - rabbit
+    environment:
+      MAIL_PASS: ${MAIL_PASS}
+
+  rabbit:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - "15672:15672"
+      - "5672:5672"
 
   postgres:
     image: postgres

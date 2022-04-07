@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-const RabbitMqUrl = "amqp://guest:guest@localhost:5672/"
+const RabbitMqUrl = "amqp://guest:guest@host.docker.internal:5672/"
 
 type rabbitMqService struct {
 	QueueName string

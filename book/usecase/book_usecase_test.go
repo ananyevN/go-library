@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"github.com/bxcodec/library/domain"
+	"github.com/bxcodec/library/message_brocker"
 	"github.com/bxcodec/library/message_brocker/rabbit"
 	mock_domain "github.com/bxcodec/library/mocks/mock_repository"
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,13 @@ func TestGet(t *testing.T) {
 	}
 	mockListOfBook := make([]domain.Book, 0)
 	mockListOfBook = append(mockListOfBook, mockBook)
+	mockRabbitMq := new(mock_domain.MessageBroker)
 
 	mockBookRepo.On("Fetch", mock.Anything, mock.AnythingOfType("int")).
 		Return(mockListOfBook, nil).Once()
 
 	mockAuthorRepo := new(mock_domain.AuthorRepository)
-	rabbitMqService := rabbit.NewRabbitMqService("book")
-	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, rabbitMqService, time.Second*2)
+	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, time.Second*2)
 	fetch, err := usecase.Fetch(context.TODO(), 1)
 
 	assert.NoError(t, err)
@@ -66,16 +67,19 @@ func TestDelete(t *testing.T) {
 		Name: "TestAuthor",
 	}
 
+	emptyEvent := message_brocker.Event{}
+
 	mockBookRepo := new(mock_domain.BookRepository)
 	mockAuthorRepo := new(mock_domain.AuthorRepository)
+	mockRabbitMq := new(mock_domain.MessageBroker)
 
 	mockBookRepo.On("GetById", mock.Anything, mock.AnythingOfType("int")).Return(mockBook, nil).Once()
 	mockAuthorRepo.On("GetById", mock.Anything, mock.AnythingOfType("int")).Return(authorMock, nil).Once()
 	mockBookRepo.On("Delete", mock.Anything, mock.AnythingOfType("int")).Return(nil).Once()
+	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string")).Return(nil).Once()
+	mockRabbitMq.On("Receive", mock.Anything).Return(emptyEvent, nil).Once()
 
-	rabbitMqService := rabbit.NewRabbitMqService("book")
-
-	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, rabbitMqService, time.Second*2)
+	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, time.Second*2)
 	err := usecase.Delete(context.TODO(), mockBook.ID)
 
 	assert.NoError(t, err)
