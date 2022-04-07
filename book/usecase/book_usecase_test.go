@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 	"github.com/bxcodec/library/domain"
-	"github.com/bxcodec/library/message_brocker"
-	"github.com/bxcodec/library/message_brocker/rabbit"
+	"github.com/bxcodec/library/message_broker"
+	"github.com/bxcodec/library/message_broker/rabbit"
 	mock_domain "github.com/bxcodec/library/mocks/mock_repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -67,7 +67,7 @@ func TestDelete(t *testing.T) {
 		Name: "TestAuthor",
 	}
 
-	emptyEvent := message_brocker.Event{}
+	emptyEvent := message_broker.Event{}
 
 	mockBookRepo := new(mock_domain.BookRepository)
 	mockAuthorRepo := new(mock_domain.AuthorRepository)

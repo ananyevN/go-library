@@ -3,8 +3,8 @@
 package mocks
 
 import (
-	"github.com/bxcodec/library/message_brocker"
-	_ "github.com/bxcodec/library/message_brocker"
+	"github.com/bxcodec/library/message_broker"
+	_ "github.com/bxcodec/library/message_broker"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -15,14 +15,14 @@ type MessageBroker struct {
 }
 
 // Receive provides a mock function with given fields:
-func (_m *MessageBroker) Receive() (message_brocker.Event, error) {
+func (_m *MessageBroker) Receive() ([]message_broker.Event, error) {
 	ret := _m.Called()
 
-	var r0 message_brocker.Event
-	if rf, ok := ret.Get(0).(func() message_brocker.Event); ok {
+	var r0 []message_broker.Event
+	if rf, ok := ret.Get(0).(func() []message_broker.Event); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(message_brocker.Event)
+		r0 = ret.Get(0).([]message_broker.Event)
 	}
 
 	var r1 error

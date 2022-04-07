@@ -1,14 +1,15 @@
-package message_brocker
+package message_broker
 
 import "log"
 
 type Event struct {
 	Content string
+	Subject string
 }
 
 type MessageBroker interface {
 	Send(content string) error
-	Receive() (Event, error)
+	Receive() ([]Event, error)
 }
 
 func FailOnError(err error, msg string) {

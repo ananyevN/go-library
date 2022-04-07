@@ -6,7 +6,7 @@ import (
 	"github.com/bxcodec/library/book/delivery/http"
 	_book_repository "github.com/bxcodec/library/book/repository/postgres"
 	"github.com/bxcodec/library/book/usecase"
-	"github.com/bxcodec/library/message_brocker/rabbit"
+	"github.com/bxcodec/library/message_broker/rabbit"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq" // <------------ here
 	"log"

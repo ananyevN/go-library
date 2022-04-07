@@ -3,7 +3,9 @@ package usecase
 import (
 	"context"
 	"github.com/bxcodec/library/domain"
-	"github.com/bxcodec/library/message_brocker"
+	"github.com/bxcodec/library/mail"
+	"github.com/bxcodec/library/message_broker"
+	"github.com/bxcodec/library/message_broker/rabbit"
 	"log"
 	"time"
 )
@@ -11,15 +13,17 @@ import (
 type bookUseCase struct {
 	bookRepo       domain.BookRepository
 	authorRepo     domain.AuthorRepository
-	messageBrocker message_brocker.MessageBroker
+	messageBroker  message_broker.MessageBroker
 	contextTimeout time.Duration
+	mailService    mail.MailService
 }
 
-func NewBookUseCase(b domain.BookRepository, ar domain.AuthorRepository, mb message_brocker.MessageBroker, timeout time.Duration) domain.BookUseCase {
+func NewBookUseCase(b domain.BookRepository, ar domain.AuthorRepository, mb message_broker.MessageBroker, timeout time.Duration) domain.BookUseCase {
 	return &bookUseCase{
 		bookRepo:       b,
 		authorRepo:     ar,
-		messageBrocker: mb,
+		messageBroker:  mb,
+		mailService:    mail.NewMailUseCase(),
 		contextTimeout: timeout,
 	}
 }
@@ -35,6 +39,11 @@ func (b *bookUseCase) Fetch(c context.Context, num int) (res []domain.Book, err 
 	if err != nil {
 		return nil, err
 	}
+
+	for _, book := range res {
+		b.publishToMsgBroker(book.Content)
+	}
+	b.sendToMail(FETCH)
 	return
 }
 
@@ -47,10 +56,13 @@ func (b *bookUseCase) Add(c context.Context, book *domain.Book) (err error) {
 		return domain.ErrConflict
 	}
 	err = b.bookRepo.Add(ctxt, book)
+
+	b.publishToMsgBroker(book.Content)
+	b.sendToMail(ADD)
 	return
 }
 
-func (b *bookUseCase) Delete(c context.Context, id int) error {
+func (b *bookUseCase) Delete(c context.Context, id int) (err error) {
 	ctxt, cancel := context.WithTimeout(c, b.contextTimeout)
 	defer cancel()
 
@@ -61,14 +73,22 @@ func (b *bookUseCase) Delete(c context.Context, id int) error {
 	if existingBook == (domain.Book{}) {
 		return domain.ErrNotFound
 	}
-	return b.bookRepo.Delete(ctxt, existingBook.ID)
+	err = b.bookRepo.Delete(ctxt, existingBook.ID)
+
+	b.publishToMsgBroker(existingBook.Content)
+	b.sendToMail(DELETE)
+	return
 }
 
-func (b *bookUseCase) Update(c context.Context, book *domain.Book) error {
+func (b *bookUseCase) Update(c context.Context, book *domain.Book) (err error) {
 	ctxt, cancel := context.WithTimeout(c, b.contextTimeout)
 	defer cancel()
 
-	return b.bookRepo.Update(ctxt, book)
+	err = b.bookRepo.Update(ctxt, book)
+
+	b.publishToMsgBroker(book.Content)
+	b.sendToMail(UPDATE)
+	return
 }
 
 func (b *bookUseCase) GetById(ctx context.Context, id int) (res domain.Book, err error) {
@@ -85,14 +105,38 @@ func (b *bookUseCase) GetById(ctx context.Context, id int) (res domain.Book, err
 	}
 	res.Author = resAuthor
 
-	err = b.messageBrocker.Send(res.Content)
-	if err != nil {
-		log.Println("Error while sending book to Rabbit")
-	}
+	b.publishToMsgBroker(res.Content)
+	b.sendToMail(GetById)
+	return
+}
 
-	_, err = b.messageBrocker.Receive()
+type eventType string
+
+const (
+	GetById eventType = "Get by ID"
+	UPDATE  eventType = "Update"
+	DELETE  eventType = "Delete"
+	ADD     eventType = "Add"
+	FETCH   eventType = "Fetch"
+)
+
+func (b *bookUseCase) publishToMsgBroker(content string) {
+	err := b.messageBroker.Send(content)
+	if err != nil {
+		log.Println(rabbit.FailedPublishing)
+	}
+}
+
+func (b *bookUseCase) sendToMail(eventType eventType) {
+	events, err := b.messageBroker.Receive()
 	if err != nil {
 		log.Println("Error while receiving book to Rabbit")
 	}
-	return
+	for _, event := range events {
+		event.Subject = string(eventType)
+		err := b.mailService.SendEmail(event)
+		if err != nil {
+			log.Println("Error while sending Email")
+		}
+	}
 }

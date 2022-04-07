@@ -1,8 +1,7 @@
 package rabbit
 
 import (
-	"github.com/bxcodec/library/message_brocker"
-	"github.com/bxcodec/library/smtpp"
+	"github.com/bxcodec/library/message_broker"
 	"github.com/streadway/amqp"
 	"log"
 )
@@ -13,17 +12,17 @@ type rabbitMqService struct {
 	QueueName string
 }
 
-func NewRabbitMqService(QueueName string) message_brocker.MessageBroker {
+func NewRabbitMqService(QueueName string) message_broker.MessageBroker {
 	return &rabbitMqService{QueueName: QueueName}
 }
 
 func (r rabbitMqService) Send(content string) error {
 	conn, err := amqp.Dial(RabbitMqUrl)
-	message_brocker.FailOnError(err, FailedToConnect)
+	message_broker.FailOnError(err, FailedToConnect)
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	message_brocker.FailOnError(err, FailedToOpenChannel)
+	message_broker.FailOnError(err, FailedToOpenChannel)
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
@@ -34,7 +33,7 @@ func (r rabbitMqService) Send(content string) error {
 		false,       // no-wait
 		nil,         // arguments
 	)
-	message_brocker.FailOnError(err, FailedToOpenQueue)
+	message_broker.FailOnError(err, FailedToOpenQueue)
 
 	err = ch.Publish(
 		"",     // exchange
@@ -45,20 +44,18 @@ func (r rabbitMqService) Send(content string) error {
 			ContentType: "text/plain",
 			Body:        []byte(content),
 		})
-	message_brocker.FailOnError(err, FailedToPublishMessage)
-
-	smtpp.SendEmail(message_brocker.Event{Content: content})
+	message_broker.FailOnError(err, FailedToPublishMessage)
 
 	return nil
 }
 
-func (r rabbitMqService) Receive() (message_brocker.Event, error) {
+func (r rabbitMqService) Receive() ([]message_broker.Event, error) {
 	conn, err := amqp.Dial(RabbitMqUrl)
-	message_brocker.FailOnError(err, FailedToConnect)
+	message_broker.FailOnError(err, FailedToConnect)
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	message_brocker.FailOnError(err, FailedToOpenChannel)
+	message_broker.FailOnError(err, FailedToOpenChannel)
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
@@ -69,7 +66,7 @@ func (r rabbitMqService) Receive() (message_brocker.Event, error) {
 		false,       // no-wait
 		nil,         // arguments
 	)
-	message_brocker.FailOnError(err, FailedToOpenQueue)
+	message_broker.FailOnError(err, FailedToOpenQueue)
 
 	msgs, err := ch.Consume(
 		q.Name, // queue
@@ -80,14 +77,17 @@ func (r rabbitMqService) Receive() (message_brocker.Event, error) {
 		false,  // no-wait
 		nil,    // args
 	)
-	message_brocker.FailOnError(err, FailedToRegisterConsumer)
+	message_broker.FailOnError(err, FailedToRegisterConsumer)
 
+	events := make([]message_broker.Event, 0)
 	go func() {
 		for d := range msgs {
 			log.Printf("Received a message: %s", d.Body)
+			events = append(events, message_broker.Event{Content: string(d.Body)})
 		}
 	}()
 
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	return message_brocker.Event{}, nil
+
+	return events, nil
 }

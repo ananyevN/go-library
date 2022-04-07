@@ -6,4 +6,5 @@ var (
 	FailedToOpenQueue        = "Failed to declare a queue"
 	FailedToPublishMessage   = "Failed to publish a message"
 	FailedToRegisterConsumer = "Failed to register a consumer"
+	FailedPublishing         = "Error while sending to Rabbit"
 )
