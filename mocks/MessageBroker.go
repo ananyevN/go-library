@@ -4,8 +4,6 @@ package mocks
 
 import (
 	"github.com/bxcodec/library/message_broker"
-	_ "github.com/bxcodec/library/message_broker"
-
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -22,7 +20,9 @@ func (_m *MessageBroker) Receive() ([]message_broker.Event, error) {
 	if rf, ok := ret.Get(0).(func() []message_broker.Event); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).([]message_broker.Event)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]message_broker.Event)
+		}
 	}
 
 	var r1 error

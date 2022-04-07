@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/bxcodec/faker"
 	"github.com/bxcodec/library/domain"
-	mocks "github.com/bxcodec/library/mocks/mock_repository"
+	"github.com/bxcodec/library/mocks"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

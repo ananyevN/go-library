@@ -4,8 +4,7 @@ import (
 	"context"
 	"github.com/bxcodec/library/domain"
 	"github.com/bxcodec/library/message_broker"
-	"github.com/bxcodec/library/message_broker/rabbit"
-	mock_domain "github.com/bxcodec/library/mocks/mock_repository"
+	"github.com/bxcodec/library/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -13,7 +12,8 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	mockBookRepo := new(mock_domain.BookRepository)
+	mockBookRepo := new(mocks.BookRepository)
+	mockMailUseCase := new(mocks.MailService)
 	mockBook := domain.Book{
 		ID:      14,
 		Title:   "Hello",
@@ -21,39 +21,62 @@ func TestGet(t *testing.T) {
 	}
 	mockListOfBook := make([]domain.Book, 0)
 	mockListOfBook = append(mockListOfBook, mockBook)
-	mockRabbitMq := new(mock_domain.MessageBroker)
+	mockRabbitMq := new(mocks.MessageBroker)
+
+	eventSlice := make([]message_broker.Event, 0)
+	eventSlice = append(eventSlice, message_broker.Event{
+		Content: "Mock Content",
+		Subject: "Mock Subject",
+	})
 
 	mockBookRepo.On("Fetch", mock.Anything, mock.AnythingOfType("int")).
 		Return(mockListOfBook, nil).Once()
+	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string")).
+		Return(nil).Once()
+	mockRabbitMq.On("Receive", mock.Anything).Return(eventSlice, nil).Once()
+	mockMailUseCase.On("SendEmail", mock.Anything).Return(nil).Once()
 
-	mockAuthorRepo := new(mock_domain.AuthorRepository)
-	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, time.Second*2)
+	mockAuthorRepo := new(mocks.AuthorRepository)
+	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, mockMailUseCase, time.Second*2)
 	fetch, err := usecase.Fetch(context.TODO(), 1)
 
 	assert.NoError(t, err)
 	assert.Equal(t, mockListOfBook, fetch)
 	mockBookRepo.AssertExpectations(t)
 	mockAuthorRepo.AssertExpectations(t)
+	mockRabbitMq.AssertExpectations(t)
+	mockMailUseCase.AssertExpectations(t)
 }
 
 func TestUpdate(t *testing.T) {
-	mockBookRepo := new(mock_domain.BookRepository)
+	mockBookRepo := new(mocks.BookRepository)
+	mockMailUseCase := new(mocks.MailService)
+	mockRabbitMq := new(mocks.MessageBroker)
 	mockBook := domain.Book{
 		ID:      14,
 		Title:   "Hello",
 		Content: "World",
 	}
+	eventSlice := make([]message_broker.Event, 0)
+	eventSlice = append(eventSlice, message_broker.Event{
+		Content: mockBook.Content,
+		Subject: "Mock Subject",
+	})
 
 	mockBookRepo.On("Update", mock.Anything, &mockBook).Once().Return(nil)
+	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string")).Return(nil).Once()
+	mockRabbitMq.On("Receive", mock.Anything).Return(eventSlice, nil).Once()
+	mockMailUseCase.On("SendEmail", mock.Anything).Return(nil).Once()
 
-	mockAuthorRepo := new(mock_domain.AuthorRepository)
-	rabbitMqService := rabbit.NewRabbitMqService("book")
+	mockAuthorRepo := new(mocks.AuthorRepository)
 
-	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, rabbitMqService, time.Second*2)
+	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, mockMailUseCase, time.Second*2)
 	err := usecase.Update(context.TODO(), &mockBook)
 
 	assert.NoError(t, err)
 	mockBookRepo.AssertExpectations(t)
+	mockRabbitMq.AssertExpectations(t)
+	mockMailUseCase.AssertExpectations(t)
 }
 
 func TestDelete(t *testing.T) {
@@ -67,22 +90,30 @@ func TestDelete(t *testing.T) {
 		Name: "TestAuthor",
 	}
 
-	emptyEvent := message_broker.Event{}
+	eventSlice := make([]message_broker.Event, 0)
+	eventSlice = append(eventSlice, message_broker.Event{
+		Content: mockBook.Content,
+		Subject: "Mock Subject",
+	})
 
-	mockBookRepo := new(mock_domain.BookRepository)
-	mockAuthorRepo := new(mock_domain.AuthorRepository)
-	mockRabbitMq := new(mock_domain.MessageBroker)
+	mockBookRepo := new(mocks.BookRepository)
+	mockAuthorRepo := new(mocks.AuthorRepository)
+	mockRabbitMq := new(mocks.MessageBroker)
+	mockMailUseCase := new(mocks.MailService)
 
 	mockBookRepo.On("GetById", mock.Anything, mock.AnythingOfType("int")).Return(mockBook, nil).Once()
 	mockAuthorRepo.On("GetById", mock.Anything, mock.AnythingOfType("int")).Return(authorMock, nil).Once()
 	mockBookRepo.On("Delete", mock.Anything, mock.AnythingOfType("int")).Return(nil).Once()
-	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string")).Return(nil).Once()
-	mockRabbitMq.On("Receive", mock.Anything).Return(emptyEvent, nil).Once()
+	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string")).Return(nil).Twice()
+	mockRabbitMq.On("Receive", mock.Anything).Return(eventSlice, nil).Twice()
+	mockMailUseCase.On("SendEmail", mock.Anything).Return(nil).Twice()
 
-	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, time.Second*2)
+	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, mockMailUseCase, time.Second*2)
 	err := usecase.Delete(context.TODO(), mockBook.ID)
 
 	assert.NoError(t, err)
 	mockBookRepo.AssertExpectations(t)
 	mockAuthorRepo.AssertExpectations(t)
+	mockRabbitMq.AssertExpectations(t)
+	mockMailUseCase.AssertExpectations(t)
 }

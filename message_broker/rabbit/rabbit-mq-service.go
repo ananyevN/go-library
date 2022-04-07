@@ -82,7 +82,6 @@ func (r rabbitMqService) Receive() ([]message_broker.Event, error) {
 	events := make([]message_broker.Event, 0)
 	go func() {
 		for d := range msgs {
-			log.Printf("Received a message: %s", d.Body)
 			events = append(events, message_broker.Event{Content: string(d.Body)})
 		}
 	}()

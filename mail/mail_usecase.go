@@ -37,7 +37,7 @@ type email struct {
 }
 
 func (email email) compress() []byte {
-	emailSubject := fmt.Sprintf("Subject: %s\n", email.event.Subject)
-	emailContent := fmt.Sprintf("Content: %s\n", email.event.Content)
+	emailSubject := fmt.Sprintf("Subject: %s\r\n\r\n", email.event.Subject)
+	emailContent := fmt.Sprintf(" %s\r\n", email.event.Content)
 	return []byte(emailSubject + emailContent)
 }

@@ -18,12 +18,12 @@ type bookUseCase struct {
 	mailService    mail.MailService
 }
 
-func NewBookUseCase(b domain.BookRepository, ar domain.AuthorRepository, mb message_broker.MessageBroker, timeout time.Duration) domain.BookUseCase {
+func NewBookUseCase(b domain.BookRepository, ar domain.AuthorRepository, mb message_broker.MessageBroker, mail mail.MailService, timeout time.Duration) domain.BookUseCase {
 	return &bookUseCase{
 		bookRepo:       b,
 		authorRepo:     ar,
 		messageBroker:  mb,
-		mailService:    mail.NewMailUseCase(),
+		mailService:    mail,
 		contextTimeout: timeout,
 	}
 }
