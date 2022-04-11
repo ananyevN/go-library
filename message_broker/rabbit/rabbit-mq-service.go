@@ -1,92 +1,134 @@
 package rabbit
 
 import (
+	"fmt"
+	"github.com/bxcodec/library/mail"
 	"github.com/bxcodec/library/message_broker"
 	"github.com/streadway/amqp"
 	"log"
 )
 
-const RabbitMqUrl = "amqp://guest:guest@host.docker.internal:5672/"
+const RabbitMqUrl = "amqp://guest:guest@localhost:5672/"
 
 type rabbitMqService struct {
-	QueueName string
 }
 
-func NewRabbitMqService(QueueName string) message_broker.MessageBroker {
-	return &rabbitMqService{QueueName: QueueName}
+func NewRabbitMqService() message_broker.MessageBroker {
+	return &rabbitMqService{}
 }
 
-func (r rabbitMqService) Send(content string) error {
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+	}
+}
+
+func (r rabbitMqService) Send(eventType message_broker.EventType, content string) error {
 	conn, err := amqp.Dial(RabbitMqUrl)
 	message_broker.FailOnError(err, FailedToConnect)
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	message_broker.FailOnError(err, FailedToOpenChannel)
+	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
-	q, err := ch.QueueDeclare(
-		r.QueueName, // name
-		false,       // durable
-		false,       // delete when unused
-		false,       // exclusive
-		false,       // no-wait
-		nil,         // arguments
+	err = ch.ExchangeDeclare(
+		"crud_exchange", // name
+		"topic",         // type
+		true,            // durable
+		false,           // auto-deleted
+		false,           // internal
+		false,           // no-wait
+		nil,             // arguments
 	)
-	message_broker.FailOnError(err, FailedToOpenQueue)
+	failOnError(err, "Failed to declare an exchange")
+
+	log.Printf("Publishing to %s topic", string(eventType))
 
 	err = ch.Publish(
-		"",     // exchange
-		q.Name, // routing key
-		false,  // mandatory
-		false,  // immediate
+		"crud_exchange",   // exchange
+		string(eventType), // routing key
+		false,             // mandatory
+		false,             // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        []byte(content),
 		})
-	message_broker.FailOnError(err, FailedToPublishMessage)
+	failOnError(err, "Failed to publish a message")
+
+	log.Printf(" [x] Sent %s", content)
 
 	return nil
 }
 
-func (r rabbitMqService) Receive() ([]message_broker.Event, error) {
+func (r rabbitMqService) Receive(eventType message_broker.EventType) (chan string, error) {
 	conn, err := amqp.Dial(RabbitMqUrl)
 	message_broker.FailOnError(err, FailedToConnect)
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	message_broker.FailOnError(err, FailedToOpenChannel)
+	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
-	q, err := ch.QueueDeclare(
-		r.QueueName, // name
-		false,       // durable
-		false,       // delete when unused
-		false,       // exclusive
-		false,       // no-wait
-		nil,         // arguments
+	err = ch.ExchangeDeclare(
+		"crud_exchange", // name
+		"topic",         // type
+		true,            // durable
+		false,           // auto-deleted
+		false,           // internal
+		false,           // no-wait
+		nil,             // arguments
 	)
-	message_broker.FailOnError(err, FailedToOpenQueue)
+	failOnError(err, "Failed to declare an exchange")
+
+	q, err := ch.QueueDeclare(
+		"",    // name
+		false, // durable
+		false, // delete when unused
+		true,  // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	failOnError(err, "Failed to declare a queue")
+
+	log.Printf("Binding queue %s to exchange %s with routing key %s",
+		q.Name, "logs_topic", string(eventType))
+
+	err = ch.QueueBind(
+		q.Name,            // queue name
+		string(eventType), // routing key
+		"crud_exchange",   // exchange
+		false,
+		nil)
+	failOnError(err, "Failed to bind a queue")
 
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		true,   // auto ack
 		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
+		false,  // no local
+		false,  // no wait
 		nil,    // args
 	)
-	message_broker.FailOnError(err, FailedToRegisterConsumer)
+	failOnError(err, "Failed to register a consumer")
 
-	events := make([]message_broker.Event, 0)
-	go func() {
+	forever := make(chan bool)
+	func() {
 		for d := range msgs {
-			events = append(events, message_broker.Event{Content: string(d.Body)})
+			go func(del amqp.Delivery) {
+				body := fmt.Sprintf("%s", del.Body)
+				event := message_broker.Event{Content: body}
+				event.Subject = string(eventType)
+				useCase := mail.NewMailUseCase()
+				useCase.SendEmail(event)
+			}(d)
 		}
 	}()
 
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	<-forever
 
-	return events, nil
+	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
+	//close(emailChan)
+	return nil, nil
 }

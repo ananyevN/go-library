@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"github.com/bxcodec/library/domain"
 	"github.com/bxcodec/library/mail"
 	"github.com/bxcodec/library/message_broker"
@@ -41,9 +42,9 @@ func (b *bookUseCase) Fetch(c context.Context, num int) (res []domain.Book, err 
 	}
 
 	for _, book := range res {
-		b.publishToMsgBroker(book.Content)
+		b.publishToMsgBroker(message_broker.FETCH, book.Content)
 	}
-	b.sendToMail(FETCH)
+	//b.sendToMail(message_broker.FETCH)
 	return
 }
 
@@ -57,8 +58,8 @@ func (b *bookUseCase) Add(c context.Context, book *domain.Book) (err error) {
 	}
 	err = b.bookRepo.Add(ctxt, book)
 
-	b.publishToMsgBroker(book.Content)
-	b.sendToMail(ADD)
+	b.publishToMsgBroker(message_broker.ADD, book.Content)
+	//b.sendToMail(message_broker.ADD)
 	return
 }
 
@@ -75,8 +76,8 @@ func (b *bookUseCase) Delete(c context.Context, id int) (err error) {
 	}
 	err = b.bookRepo.Delete(ctxt, existingBook.ID)
 
-	b.publishToMsgBroker(existingBook.Content)
-	b.sendToMail(DELETE)
+	b.publishToMsgBroker(message_broker.DELETE, existingBook.Content)
+	//b.sendToMail(message_broker.DELETE)
 	return
 }
 
@@ -86,8 +87,8 @@ func (b *bookUseCase) Update(c context.Context, book *domain.Book) (err error) {
 
 	err = b.bookRepo.Update(ctxt, book)
 
-	b.publishToMsgBroker(book.Content)
-	b.sendToMail(UPDATE)
+	b.publishToMsgBroker(message_broker.UPDATE, book.Content)
+	//b.sendToMail(message_broker.UPDATE)
 	return
 }
 
@@ -105,38 +106,37 @@ func (b *bookUseCase) GetById(ctx context.Context, id int) (res domain.Book, err
 	}
 	res.Author = resAuthor
 
-	b.publishToMsgBroker(res.Content)
-	b.sendToMail(GetById)
+	b.publishToMsgBroker(message_broker.GetById, res.Content)
+	go b.sendToMail(message_broker.GetById)
 	return
 }
 
-type eventType string
-
-const (
-	GetById eventType = "Get by ID"
-	UPDATE  eventType = "Update"
-	DELETE  eventType = "Delete"
-	ADD     eventType = "Add"
-	FETCH   eventType = "Fetch"
-)
-
-func (b *bookUseCase) publishToMsgBroker(content string) {
-	err := b.messageBroker.Send(content)
+func (b *bookUseCase) publishToMsgBroker(eventType message_broker.EventType, content string) {
+	err := b.messageBroker.Send(eventType, content)
 	if err != nil {
 		log.Println(rabbit.FailedPublishing)
 	}
 }
 
-func (b *bookUseCase) sendToMail(eventType eventType) {
-	events, err := b.messageBroker.Receive()
-	if err != nil {
-		log.Println("Error while receiving book to Rabbit")
+func (b *bookUseCase) sendToMail(eventType message_broker.EventType) {
+
+	emailChan, _ := b.messageBroker.Receive(eventType)
+	go send(eventType, emailChan)
+}
+
+func send(eventType message_broker.EventType, emailChan chan string) error {
+
+	//fmt.Println("DATA ", <-emailChan)
+
+	for email := range emailChan {
+		fmt.Println("DATA ", email)
+
+		//body := fmt.Sprintf("%s", email)
+		//event := message_broker.Event{Content: body}
+		//event.Subject = string(eventType)
+		//useCase := mail.NewMailUseCase()
+		//useCase.SendEmail(event)
 	}
-	for _, event := range events {
-		event.Subject = string(eventType)
-		err := b.mailService.SendEmail(event)
-		if err != nil {
-			log.Println("Error while sending Email")
-		}
-	}
+
+	return nil
 }

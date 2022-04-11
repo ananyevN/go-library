@@ -1,6 +1,18 @@
 package message_broker
 
-import "log"
+import (
+	"log"
+)
+
+type EventType string
+
+const (
+	GetById EventType = "get.by.id.sql"
+	UPDATE  EventType = "update.sql"
+	DELETE  EventType = "delete.sql"
+	ADD     EventType = "add.sql"
+	FETCH   EventType = "fetch.sql"
+)
 
 type Event struct {
 	Content string
@@ -8,8 +20,8 @@ type Event struct {
 }
 
 type MessageBroker interface {
-	Send(content string) error
-	Receive() ([]Event, error)
+	Send(eventType EventType, content string) error
+	Receive(eventType EventType) (chan string, error)
 }
 
 func FailOnError(err error, msg string) {
