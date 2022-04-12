@@ -25,11 +25,15 @@ func NewMailUseCase() *emailUseCase {
 	}
 }
 
-func (e emailUseCase) SendEmail(event message_broker.Event) error {
+func (e emailUseCase) SendEmail(event message_broker.Event) (err error) {
 	address := e.host + ":" + e.port
 	auth := smtp.PlainAuth("", e.from, e.password, e.host)
 	email := email{event}.compress()
-	return smtp.SendMail(address, auth, e.from, e.toEmail, email)
+	err = smtp.SendMail(address, auth, e.from, e.toEmail, email)
+	if err != nil {
+		err = fmt.Errorf("Error while sending email with %s subject. ", event.Subject)
+	}
+	return err
 }
 
 type email struct {

@@ -19,21 +19,16 @@ func TestGet(t *testing.T) {
 		Title:   "Hello",
 		Content: "World",
 	}
+
 	mockListOfBook := make([]domain.Book, 0)
 	mockListOfBook = append(mockListOfBook, mockBook)
 	mockRabbitMq := new(mocks.MessageBroker)
 
-	eventSlice := make([]message_broker.Event, 0)
-	eventSlice = append(eventSlice, message_broker.Event{
-		Content: "Mock Content",
-		Subject: "Mock Subject",
-	})
-
 	mockBookRepo.On("Fetch", mock.Anything, mock.AnythingOfType("int")).
 		Return(mockListOfBook, nil).Once()
-	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string")).
+	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 		Return(nil).Once()
-	mockRabbitMq.On("Receive", mock.Anything).Return(eventSlice, nil).Once()
+	mockRabbitMq.On("Receive", mock.Anything, mock.AnythingOfType("string")).Return(nil).Once()
 	mockMailUseCase.On("SendEmail", mock.Anything).Return(nil).Once()
 
 	mockAuthorRepo := new(mocks.AuthorRepository)

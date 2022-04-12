@@ -37,7 +37,7 @@ func main() {
 
 	authorRepo := postgres.NewPostgresAuthorRepository(dbConn)
 	bookRepo := _book_repository.NewPostgresBookRepository(dbConn)
-	rabbitMqService := rabbit.NewRabbitMqService()
+	rabbitMqService := rabbit.NewRabbitMqService("crud_exchange")
 	mailUseCase := mail.NewMailUseCase()
 
 	timeoutContext := time.Second

@@ -12,36 +12,27 @@ type MessageBroker struct {
 	mock.Mock
 }
 
-// Receive provides a mock function with given fields:
-func (_m *MessageBroker) Receive() ([]message_broker.Event, error) {
-	ret := _m.Called()
-
-	var r0 []message_broker.Event
-	if rf, ok := ret.Get(0).(func() []message_broker.Event); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]message_broker.Event)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// Send provides a mock function with given fields: content
-func (_m *MessageBroker) Send(content string) error {
-	ret := _m.Called(content)
+// Receive provides a mock function with given fields: eventType, emailChan
+func (_m *MessageBroker) Receive(eventType message_broker.EventType, emailChan chan []byte) error {
+	ret := _m.Called(eventType, emailChan)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(content)
+	if rf, ok := ret.Get(0).(func(message_broker.EventType, chan []byte) error); ok {
+		r0 = rf(eventType, emailChan)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Send provides a mock function with given fields: eventType, content
+func (_m *MessageBroker) Send(eventType message_broker.EventType, content string) error {
+	ret := _m.Called(eventType, content)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(message_broker.EventType, string) error); ok {
+		r0 = rf(eventType, content)
 	} else {
 		r0 = ret.Error(0)
 	}
