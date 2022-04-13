@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	"github.com/bxcodec/library/message_broker"
+	message_broker2 "github.com/bxcodec/library/message_broker"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -12,13 +12,13 @@ type MessageBroker struct {
 	mock.Mock
 }
 
-// Receive provides a mock function with given fields: eventType, emailChan
-func (_m *MessageBroker) Receive(eventType message_broker.EventType, emailChan chan []byte) error {
-	ret := _m.Called(eventType, emailChan)
+// Receive provides a mock function with given fields: emailChan
+func (_m *MessageBroker) Receive(emailChan chan []byte) error {
+	ret := _m.Called(emailChan)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(message_broker.EventType, chan []byte) error); ok {
-		r0 = rf(eventType, emailChan)
+	if rf, ok := ret.Get(0).(func(chan []byte) error); ok {
+		r0 = rf(emailChan)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -26,13 +26,13 @@ func (_m *MessageBroker) Receive(eventType message_broker.EventType, emailChan c
 	return r0
 }
 
-// Send provides a mock function with given fields: eventType, content
-func (_m *MessageBroker) Send(eventType message_broker.EventType, content string) error {
-	ret := _m.Called(eventType, content)
+// Send provides a mock function with given fields: event
+func (_m *MessageBroker) Send(event message_broker2.Event) error {
+	ret := _m.Called(event)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(message_broker.EventType, string) error); ok {
-		r0 = rf(eventType, content)
+	if rf, ok := ret.Get(0).(func(message_broker2.Event) error); ok {
+		r0 = rf(event)
 	} else {
 		r0 = ret.Error(0)
 	}

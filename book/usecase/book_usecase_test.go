@@ -12,8 +12,6 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	mockBookRepo := new(mocks.BookRepository)
-	mockMailUseCase := new(mocks.MailService)
 	mockBook := domain.Book{
 		ID:      14,
 		Title:   "Hello",
@@ -22,14 +20,19 @@ func TestGet(t *testing.T) {
 
 	mockListOfBook := make([]domain.Book, 0)
 	mockListOfBook = append(mockListOfBook, mockBook)
+
+	mockEvent := message_broker.Event{
+		Content: mockBook.Content,
+		Subject: "fetch.sql",
+	}
+
 	mockRabbitMq := new(mocks.MessageBroker)
+	mockBookRepo := new(mocks.BookRepository)
+	mockMailUseCase := new(mocks.MailService)
 
 	mockBookRepo.On("Fetch", mock.Anything, mock.AnythingOfType("int")).
 		Return(mockListOfBook, nil).Once()
-	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-		Return(nil).Once()
-	mockRabbitMq.On("Receive", mock.Anything, mock.AnythingOfType("string")).Return(nil).Once()
-	mockMailUseCase.On("SendEmail", mock.Anything).Return(nil).Once()
+	mockRabbitMq.On("Send", mockEvent).Return(nil).Once()
 
 	mockAuthorRepo := new(mocks.AuthorRepository)
 	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, mockMailUseCase, time.Second*2)
@@ -44,26 +47,24 @@ func TestGet(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	mockBookRepo := new(mocks.BookRepository)
-	mockMailUseCase := new(mocks.MailService)
-	mockRabbitMq := new(mocks.MessageBroker)
 	mockBook := domain.Book{
 		ID:      14,
 		Title:   "Hello",
 		Content: "World",
 	}
-	eventSlice := make([]message_broker.Event, 0)
-	eventSlice = append(eventSlice, message_broker.Event{
+
+	mockEvent := message_broker.Event{
 		Content: mockBook.Content,
-		Subject: "Mock Subject",
-	})
+		Subject: "update.sql",
+	}
+
+	mockBookRepo := new(mocks.BookRepository)
+	mockMailUseCase := new(mocks.MailService)
+	mockRabbitMq := new(mocks.MessageBroker)
+	mockAuthorRepo := new(mocks.AuthorRepository)
 
 	mockBookRepo.On("Update", mock.Anything, &mockBook).Once().Return(nil)
-	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string")).Return(nil).Once()
-	mockRabbitMq.On("Receive", mock.Anything).Return(eventSlice, nil).Once()
-	mockMailUseCase.On("SendEmail", mock.Anything).Return(nil).Once()
-
-	mockAuthorRepo := new(mocks.AuthorRepository)
+	mockRabbitMq.On("Send", mockEvent).Return(nil).Once()
 
 	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, mockMailUseCase, time.Second*2)
 	err := usecase.Update(context.TODO(), &mockBook)
@@ -85,11 +86,10 @@ func TestDelete(t *testing.T) {
 		Name: "TestAuthor",
 	}
 
-	eventSlice := make([]message_broker.Event, 0)
-	eventSlice = append(eventSlice, message_broker.Event{
+	mockEvent := message_broker.Event{
 		Content: mockBook.Content,
-		Subject: "Mock Subject",
-	})
+		Subject: "delete.sql",
+	}
 
 	mockBookRepo := new(mocks.BookRepository)
 	mockAuthorRepo := new(mocks.AuthorRepository)
@@ -99,9 +99,7 @@ func TestDelete(t *testing.T) {
 	mockBookRepo.On("GetById", mock.Anything, mock.AnythingOfType("int")).Return(mockBook, nil).Once()
 	mockAuthorRepo.On("GetById", mock.Anything, mock.AnythingOfType("int")).Return(authorMock, nil).Once()
 	mockBookRepo.On("Delete", mock.Anything, mock.AnythingOfType("int")).Return(nil).Once()
-	mockRabbitMq.On("Send", mock.Anything, mock.AnythingOfType("string")).Return(nil).Twice()
-	mockRabbitMq.On("Receive", mock.Anything).Return(eventSlice, nil).Twice()
-	mockMailUseCase.On("SendEmail", mock.Anything).Return(nil).Twice()
+	mockRabbitMq.On("Send", mockEvent).Return(nil).Once()
 
 	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, mockMailUseCase, time.Second*2)
 	err := usecase.Delete(context.TODO(), mockBook.ID)
