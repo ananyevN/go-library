@@ -16,7 +16,7 @@ import (
 
 func main() {
 	dbConn, err := sql.Open(`postgres`,
-		"postgres://postgres:password@localhost:5432/postgres?sslmode=disable")
+		"postgres://postgres:password@host.docker.internal:5432/postgres?sslmode=disable")
 
 	if err != nil {
 		log.Fatal(err)

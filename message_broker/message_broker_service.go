@@ -20,8 +20,8 @@ type Event struct {
 }
 
 type MessageBroker interface {
-	Send(eventType EventType, content string) error
-	Receive(eventType EventType, emailChan chan []byte) error
+	Send(content string) error
+	Receive(emailChan chan []byte) error
 }
 
 func FailOnError(err error, msg string) {

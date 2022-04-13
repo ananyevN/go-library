@@ -113,7 +113,7 @@ func (b *bookUseCase) getById(ctx context.Context, id int) (res domain.Book, err
 }
 
 func (b *bookUseCase) publishToMsgBrokerAndSendEmail(eventType mb.EventType, content string) {
-	err := b.messageBroker.Send(eventType, content)
+	err := b.messageBroker.Send(content)
 	if err != nil {
 		log.Println(rabbit.FailedPublishing)
 	}
@@ -121,7 +121,7 @@ func (b *bookUseCase) publishToMsgBrokerAndSendEmail(eventType mb.EventType, con
 	emailChan := make(chan []byte, 1)
 
 	go func() {
-		err := b.messageBroker.Receive(eventType, emailChan)
+		err := b.messageBroker.Receive(emailChan)
 		if err != nil {
 			log.Println(rabbit.FailedReceiving)
 		}
