@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"github.com/bxcodec/library/domain"
 	"github.com/bxcodec/library/mail"
 	mb "github.com/bxcodec/library/message_broker"
@@ -113,7 +112,8 @@ func (b *bookUseCase) getById(ctx context.Context, id int) (res domain.Book, err
 }
 
 func (b *bookUseCase) publishToMsgBrokerAndSendEmail(eventType mb.EventType, content string) {
-	err := b.messageBroker.Send(content)
+	event := mb.Event{Content: content, Subject: string(eventType)}
+	err := b.messageBroker.Send(event)
 	if err != nil {
 		log.Println(rabbit.FailedPublishing)
 	}
@@ -126,22 +126,15 @@ func (b *bookUseCase) publishToMsgBrokerAndSendEmail(eventType mb.EventType, con
 			log.Println(rabbit.FailedReceiving)
 		}
 	}()
-	go b.sendToMail(eventType, emailChan)
+	go b.sendToMail(emailChan)
 }
 
-func (b *bookUseCase) sendToMail(eventType mb.EventType, emailChan chan []byte) {
-	for {
-		select {
-		case d := <-emailChan:
-			{
-				body := fmt.Sprintf("%s", d)
-				event := mb.Event{Content: body}
-				event.Subject = string(eventType)
-				err := b.mailService.SendEmail(event)
-				if err != nil {
-					log.Println(err.Error())
-				}
-			}
+func (b *bookUseCase) sendToMail(emailChan chan []byte) {
+	for e := range emailChan {
+		event := mb.Event{}
+		err := b.mailService.SendEmail(*event.Unmarshal(e))
+		if err != nil {
+			log.Println(err.Error())
 		}
 	}
 }

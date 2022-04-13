@@ -1,10 +1,22 @@
 package message_broker
 
 import (
+	"encoding/json"
 	"log"
 )
 
 type EventType string
+
+type MessageBroker interface {
+	Send(event Event) error
+	Receive(emailChan chan []byte) error
+}
+
+func FailOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+	}
+}
 
 const (
 	GetById EventType = "get.by.id.sql"
@@ -15,17 +27,22 @@ const (
 )
 
 type Event struct {
-	Content string
-	Subject string
+	Content string `json:"content"`
+	Subject string `json:"subject"`
 }
 
-type MessageBroker interface {
-	Send(content string) error
-	Receive(emailChan chan []byte) error
-}
-
-func FailOnError(err error, msg string) {
+func (e *Event) Marshal() []byte {
+	res, err := json.Marshal(e)
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
+		log.Fatalf("Error marshal to json")
 	}
+	return res
+}
+
+func (e *Event) Unmarshal(body []byte) *Event {
+	err := json.Unmarshal(body, e)
+	if err != nil {
+		return &Event{}
+	}
+	return e
 }

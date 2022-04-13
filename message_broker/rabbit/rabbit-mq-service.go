@@ -15,7 +15,7 @@ func NewRabbitMqService(q string) mb.MessageBroker {
 	return &rabbitMqService{queue: q}
 }
 
-func (r rabbitMqService) Send(content string) error {
+func (r rabbitMqService) Send(event mb.Event) error {
 	conn, err := amqp.Dial(RabbitMqUrl)
 	mb.FailOnError(err, FailedToConnect)
 	defer conn.Close()
@@ -41,7 +41,7 @@ func (r rabbitMqService) Send(content string) error {
 		false,  // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body:        []byte(content),
+			Body:        event.Marshal(),
 		})
 	mb.FailOnError(err, FailedToPublishMessage)
 
