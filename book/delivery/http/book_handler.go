@@ -1,40 +1,46 @@
 package http
 
 import (
-	"github.com/bxcodec/library/domain"
-	"github.com/labstack/echo"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"
 	"net/http"
 	"strconv"
+
+	"github.com/bxcodec/library/domain"
+	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 )
 
-const NAME = "num"
-const ID = "id"
+const (
+	NUM    = "num"
+	OFFSET = "offset"
+	ID     = "id"
+)
 
 type ResponseError struct {
 	Message string `json:"message"`
 }
 
 type BookHandler struct {
-	BUseCase domain.BookUseCase
+	BUseCase  domain.BookUseCase
+	validator *validator.Validate
 }
 
 func NewBookHandler(e *echo.Echo, us domain.BookUseCase) {
-	handler := &BookHandler{BUseCase: us}
+	handler := &BookHandler{BUseCase: us, validator: validator.New()}
 	e.GET("/books", handler.FetchBook)
 	e.GET("/books/:id", handler.GetById)
 	e.POST("/books", handler.Add)
-	e.POST("/book", handler.Update)
+	e.PUT("/book", handler.Update)
 	e.DELETE("/books/:id", handler.Delete)
 }
 
 func (h BookHandler) FetchBook(c echo.Context) error {
-	nums := c.QueryParam(NAME)
+	nums := c.QueryParam(NUM)
 	num, _ := strconv.Atoi(nums)
-	ctx := c.Request().Context()
+	offsets := c.QueryParam(OFFSET)
+	offset, _ := strconv.Atoi(offsets)
 
-	listBooks, err := h.BUseCase.Fetch(ctx, num)
+	listBooks, err := h.BUseCase.Fetch(c.Request().Context(), num, offset)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, domain.ErrNotFound.Error())
 	}
@@ -47,8 +53,7 @@ func (h BookHandler) GetById(c echo.Context) error {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
 
-	ctxt := c.Request().Context()
-	book, err := h.BUseCase.GetById(ctxt, id)
+	book, err := h.BUseCase.GetById(c.Request().Context(), id)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, domain.ErrNotFound.Error())
 	}
@@ -61,8 +66,7 @@ func (h BookHandler) Delete(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, domain.ErrNotFound.Error())
 	}
 
-	ctxt := c.Request().Context()
-	err = h.BUseCase.Delete(ctxt, id)
+	err = h.BUseCase.Delete(c.Request().Context(), id)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
@@ -71,17 +75,15 @@ func (h BookHandler) Delete(c echo.Context) error {
 
 func (h BookHandler) Add(c echo.Context) error {
 	var book domain.Book
-	err := c.Bind(&book)
-	if err != nil {
+	var err error
+	if err = c.Bind(&book); err != nil {
 		return c.JSON(http.StatusUnprocessableEntity, err.Error())
 	}
-	if ok, err := isRequestValid(&book); !ok {
+	if ok, err := h.isRequestValid(&book); !ok {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	ctx := c.Request().Context()
-	err = h.BUseCase.Add(ctx, &book)
-	if err != nil {
+	if err = h.BUseCase.Add(c.Request().Context(), &book); err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
 	return c.JSON(http.StatusOK, book)
@@ -89,25 +91,22 @@ func (h BookHandler) Add(c echo.Context) error {
 
 func (h BookHandler) Update(c echo.Context) error {
 	var book domain.Book
-	err := c.Bind(&book)
-	if err != nil {
+	var err error
+	if err := c.Bind(&book); err != nil {
 		return c.JSON(http.StatusUnprocessableEntity, err.Error())
 	}
-	if ok, err := isRequestValid(&book); !ok {
+	if ok, err := h.isRequestValid(&book); !ok {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	ctx := c.Request().Context()
-	err = h.BUseCase.Update(ctx, &book)
-	if err != nil {
+	if err = h.BUseCase.Update(c.Request().Context(), &book); err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
 	return c.JSON(http.StatusOK, book)
 }
 
-func isRequestValid(b *domain.Book) (bool, error) {
-	validate := validator.New()
-	err := validate.Struct(b)
+func (h BookHandler) isRequestValid(b *domain.Book) (bool, error) {
+	err := h.validator.Struct(b)
 	if err != nil {
 		return false, err
 	}

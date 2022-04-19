@@ -16,7 +16,7 @@ type Book struct {
 
 // BookUseCase represent the book's use case contract
 type BookUseCase interface {
-	Fetch(ctx context.Context, num int) ([]Book, error)
+	Fetch(ctx context.Context, num int, offset int) ([]Book, error)
 	Add(ctx context.Context, book *Book) error
 	Delete(ctx context.Context, id int) error
 	Update(ctx context.Context, book *Book) error
@@ -25,7 +25,7 @@ type BookUseCase interface {
 
 // BookRepository represent the book's repository contract
 type BookRepository interface {
-	Fetch(ctx context.Context, num int) ([]Book, error)
+	Fetch(ctx context.Context, num int, offset int) ([]Book, error)
 	Add(ctx context.Context, book *Book) error
 	Delete(ctx context.Context, id int) error
 	Update(ctx context.Context, book *Book) error

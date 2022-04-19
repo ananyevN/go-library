@@ -3,11 +3,12 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/bxcodec/library/domain"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
-	"testing"
-	"time"
 )
 
 func TestFetch(t *testing.T) {
@@ -29,14 +30,15 @@ func TestFetch(t *testing.T) {
 		AddRow(books[1].ID, books[1].Title, books[1].Content, books[1].Author.ID, books[1].Author.Name, books[1].Author.CreatedAt, books[1].Author.UpdatedAt, books[1].UpdatedAt, books[1].CreatedAt)
 
 	var num = 2
+	var offset = 1
 	query := fmt.Sprintf("SELECT b.id, b.title, b.content, a.id, a.name, a.created_at, a.updated_at, b.created_at, b.updated_at "+
 		"FROM book as b "+
 		"INNER JOIN author a on b.author_id = a.id "+
-		"ORDER BY b.created_at LIMIT %d", num)
+		"ORDER BY b.id LIMIT %d OFFSET %d", num, offset)
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
 	bookRepository := NewPostgresBookRepository(db)
-	result, err := bookRepository.Fetch(context.TODO(), num)
+	result, err := bookRepository.Fetch(context.TODO(), num, offset)
 	assert.Equal(t, num, len(result))
 }
 

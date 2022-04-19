@@ -1,11 +1,28 @@
 package rabbit
 
 import (
+	"fmt"
 	mb "github.com/bxcodec/library/message_broker"
+	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
+	"log"
 )
 
-const RabbitMqUrl = "amqp://guest:guest@host.docker.internal:5672/"
+var rabbitMqUrl string
+
+func init() {
+	viper.SetConfigFile(`config.json`)
+
+	if err := viper.ReadInConfig(); err != nil {
+		panic(err)
+	}
+
+	rabbitHost := viper.GetString(`rabbit.host`)
+	rabbitPort := viper.GetInt(`rabbit.port`)
+	rabbitUser := viper.GetString(`rabbit.user`)
+	rabbitPass := viper.GetString(`rabbit.pass`)
+	rabbitMqUrl = fmt.Sprintf("amqp://%s:%s@%s:%d/", rabbitUser, rabbitPass, rabbitHost, rabbitPort)
+}
 
 type rabbitMqService struct {
 	queue string
@@ -16,12 +33,18 @@ func NewRabbitMqService(q string) mb.MessageBroker {
 }
 
 func (r rabbitMqService) Send(event mb.Event) error {
-	conn, err := amqp.Dial(RabbitMqUrl)
-	mb.FailOnError(err, FailedToConnect)
+	conn, err := amqp.Dial(rabbitMqUrl)
+	if err != nil {
+		log.Printf("%s: %s", FailedToConnect, err)
+		return err
+	}
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	mb.FailOnError(err, FailedToOpenChannel)
+	if err != nil {
+		log.Printf("%s: %s", FailedToOpenChannel, err)
+		return err
+	}
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
@@ -32,7 +55,10 @@ func (r rabbitMqService) Send(event mb.Event) error {
 		false,   // no-wait
 		nil,     // arguments
 	)
-	mb.FailOnError(err, FailedToOpenQueue)
+	if err != nil {
+		log.Printf("%s: %s", FailedToOpenQueue, err)
+		return err
+	}
 
 	err = ch.Publish(
 		"",     // exchange
@@ -43,18 +69,27 @@ func (r rabbitMqService) Send(event mb.Event) error {
 			ContentType: "text/plain",
 			Body:        event.Marshal(),
 		})
-	mb.FailOnError(err, FailedToPublishMessage)
+	if err != nil {
+		log.Printf("%s: %s", FailedToPublishMessage, err)
+		return err
+	}
 
 	return nil
 }
 
 func (r rabbitMqService) Receive(emailChan chan []byte) error {
-	conn, err := amqp.Dial(RabbitMqUrl)
-	mb.FailOnError(err, FailedToConnect)
+	conn, err := amqp.Dial(rabbitMqUrl)
+	if err != nil {
+		log.Printf("%s: %s", FailedToConnect, err)
+		return err
+	}
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	mb.FailOnError(err, FailedToOpenChannel)
+	if err != nil {
+		log.Printf("%s: %s", FailedToOpenChannel, err)
+		return err
+	}
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
@@ -65,7 +100,10 @@ func (r rabbitMqService) Receive(emailChan chan []byte) error {
 		false,   // no-wait
 		nil,     // arguments
 	)
-	mb.FailOnError(err, FailedToOpenQueue)
+	if err != nil {
+		log.Printf("%s: %s", FailedToOpenQueue, err)
+		return err
+	}
 
 	msgs, err := ch.Consume(
 		q.Name, // queue
@@ -76,7 +114,10 @@ func (r rabbitMqService) Receive(emailChan chan []byte) error {
 		false,  // no-wait
 		nil,    // args
 	)
-	mb.FailOnError(err, FailedToRegisterConsumer)
+	if err != nil {
+		log.Printf("%s: %s", FailedToRegisterConsumer, err)
+		return err
+	}
 
 	for d := range msgs {
 		emailChan <- d.Body

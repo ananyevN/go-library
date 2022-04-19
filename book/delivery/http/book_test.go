@@ -3,6 +3,11 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
 	"github.com/bxcodec/faker"
 	"github.com/bxcodec/library/domain"
 	"github.com/bxcodec/library/mocks"
@@ -10,10 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
 )
 
 func TestFetch(t *testing.T) {
@@ -25,11 +26,12 @@ func TestFetch(t *testing.T) {
 	mockListBooks := make([]domain.Book, 0)
 	mockListBooks = append(mockListBooks, mockBook)
 	num := 1
-	mockUCase.On("Fetch", mock.Anything, num).
+	offset := 0
+	mockUCase.On("Fetch", mock.Anything, num, offset).
 		Return(mockListBooks, nil)
 
 	e := echo.New()
-	req, err := http.NewRequest(echo.GET, "/book?num=1", strings.NewReader(""))
+	req, err := http.NewRequest(echo.GET, "/book?num=1&offset=0", strings.NewReader(""))
 	assert.NoError(t, err)
 
 	rec := httptest.NewRecorder()
@@ -53,7 +55,7 @@ func TestUpdate(t *testing.T) {
 		Return(nil)
 
 	e := echo.New()
-	req, err := http.NewRequest(echo.POST, "/book", strings.NewReader(string(j)))
+	req, err := http.NewRequest(echo.PUT, "/book", strings.NewReader(string(j)))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	assert.NoError(t, err)
 

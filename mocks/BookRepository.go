@@ -42,13 +42,13 @@ func (_m *BookRepository) Delete(ctx context.Context, id int) error {
 	return r0
 }
 
-// Fetch provides a mock function with given fields: ctx, num
-func (_m *BookRepository) Fetch(ctx context.Context, num int) ([]domain.Book, error) {
-	ret := _m.Called(ctx, num)
+// Fetch provides a mock function with given fields: ctx, num, offset
+func (_m *BookRepository) Fetch(ctx context.Context, num int, offset int) ([]domain.Book, error) {
+	ret := _m.Called(ctx, num, offset)
 
 	var r0 []domain.Book
-	if rf, ok := ret.Get(0).(func(context.Context, int) []domain.Book); ok {
-		r0 = rf(ctx, num)
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) []domain.Book); ok {
+		r0 = rf(ctx, num, offset)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Book)
@@ -56,8 +56,8 @@ func (_m *BookRepository) Fetch(ctx context.Context, num int) ([]domain.Book, er
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
-		r1 = rf(ctx, num)
+	if rf, ok := ret.Get(1).(func(context.Context, int, int) error); ok {
+		r1 = rf(ctx, num, offset)
 	} else {
 		r1 = ret.Error(1)
 	}

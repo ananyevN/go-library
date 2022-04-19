@@ -2,13 +2,14 @@ package usecase
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/bxcodec/library/domain"
 	"github.com/bxcodec/library/message_broker"
 	"github.com/bxcodec/library/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
-	"time"
 )
 
 func TestGet(t *testing.T) {
@@ -36,7 +37,7 @@ func TestGet(t *testing.T) {
 
 	mockAuthorRepo := new(mocks.AuthorRepository)
 	usecase := NewBookUseCase(mockBookRepo, mockAuthorRepo, mockRabbitMq, mockMailUseCase, time.Second*2)
-	fetch, err := usecase.Fetch(context.TODO(), 1)
+	fetch, err := usecase.Fetch(context.TODO(), 1, 0)
 
 	assert.NoError(t, err)
 	assert.Equal(t, mockListOfBook, fetch)

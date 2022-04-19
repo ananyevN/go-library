@@ -3,33 +3,38 @@ package mail
 import (
 	"fmt"
 	"github.com/bxcodec/library/message_broker"
+	"github.com/spf13/viper"
 	"net/smtp"
 	"os"
 )
 
 type emailUseCase struct {
-	from     string
-	password string
-	toEmail  []string
-	host     string
-	port     string
+	email Email
 }
 
-func NewMailUseCase() *emailUseCase {
-	return &emailUseCase{
-		from:     "n.ananyev777@gmail.com",
-		password: os.Getenv("MAIL_PASS"),
-		toEmail:  []string{"life_love_asap@mail.ru"},
-		host:     "smtp.gmail.com",
-		port:     "587",
+func init() {
+	viper.SetConfigFile(`config.json`)
+
+	if err := viper.ReadInConfig(); err != nil {
+		panic(err)
 	}
 }
 
-func (e emailUseCase) SendEmail(event message_broker.Event) (err error) {
-	address := e.host + ":" + e.port
-	auth := smtp.PlainAuth("", e.from, e.password, e.host)
+func NewSender() Sender {
+	return &emailUseCase{email: Email{
+		from:     viper.GetString(`mail.from`),
+		password: os.Getenv("MAIL_PASS"),
+		toEmail:  []string{viper.GetString(`mail.to`)},
+		host:     viper.GetString(`mail.host`),
+		port:     viper.GetString(`mail.port`),
+	}}
+}
+
+func (e emailUseCase) SendEmail(event message_broker.Event) error {
+	address := e.email.host + ":" + e.email.port
+	auth := smtp.PlainAuth("", e.email.from, e.email.password, e.email.host)
 	email := email{event}.compress()
-	err = smtp.SendMail(address, auth, e.from, e.toEmail, email)
+	err := smtp.SendMail(address, auth, e.email.from, e.email.toEmail, email)
 	if err != nil {
 		err = fmt.Errorf("Error while sending email with %s subject. ", event.Subject)
 	}

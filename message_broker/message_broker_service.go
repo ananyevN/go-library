@@ -12,12 +12,6 @@ type MessageBroker interface {
 	Receive(emailChan chan []byte) error
 }
 
-func FailOnError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-	}
-}
-
 const (
 	GetById EventType = "get.by.id.sql"
 	UPDATE  EventType = "update.sql"

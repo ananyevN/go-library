@@ -13,6 +13,8 @@ services:
       - rabbit
     environment:
       MAIL_PASS: ${MAIL_PASS}
+    volumes:
+      - ./config.json:/app/config.json
 
   rabbit:
     image: rabbitmq:3-management
