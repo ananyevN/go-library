@@ -1,0 +1,22 @@
+{
+  "database": {
+    "host": "host.docker.internal",
+    "port": 5432,
+    "user": "postgres",
+    "pass": "password",
+    "name": "postgres"
+  },
+  "rabbit": {
+    "host": "host.docker.internal",
+    "port": 5672,
+    "user": "guest",
+    "pass": "guest"
+  },
+  "mail": {
+    "from": "life_love_asap@mail.ru",
+    "pass": "Admub93XLQcRFBWRLitF",
+    "to": "n.ananyev@inbox.ru",
+    "host": "smtp.mail.ru",
+    "port": "587"
+  }
+}

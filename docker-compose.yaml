@@ -1,0 +1,36 @@
+version: "2.3"
+services:
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: library_api
+    ports:
+      - "9000:9000"
+    depends_on:
+      - postgres
+      - rabbit
+    environment:
+      MAIL_PASS: ${MAIL_PASS}
+    volumes:
+      - ./config.json:/app/config.json
+
+  rabbit:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
+  postgres:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./dump.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      POSTGRES_PASSWORD: password
+volumes:
+  data:
