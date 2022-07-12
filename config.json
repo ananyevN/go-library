@@ -13,9 +13,10 @@
     "pass": "guest"
   },
   "mail": {
-    "from": "n.ananyev777@gmail.com",
-    "to": "life_love_asap@mail.ru",
-    "host": "smtp.gmail.com",
+    "from": "life_love_asap@mail.ru",
+    "pass": "Admub93XLQcRFBWRLitF",
+    "to": "n.ananyev@inbox.ru",
+    "host": "smtp.mail.ru",
     "port": "587"
   }
 }

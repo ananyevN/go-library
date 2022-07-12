@@ -5,7 +5,6 @@ import (
 	"github.com/bxcodec/library/message_broker"
 	"github.com/spf13/viper"
 	"net/smtp"
-	"os"
 )
 
 type emailUseCase struct {
@@ -23,7 +22,7 @@ func init() {
 func NewSender() Sender {
 	return &emailUseCase{email: Email{
 		from:     viper.GetString(`mail.from`),
-		password: os.Getenv("MAIL_PASS"),
+		password: viper.GetString(`mail.pass`),
 		toEmail:  []string{viper.GetString(`mail.to`)},
 		host:     viper.GetString(`mail.host`),
 		port:     viper.GetString(`mail.port`),
