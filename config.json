@@ -1,13 +1,13 @@
 {
   "database": {
-    "host": "host.docker.internal",
+    "host": "postgres",
     "port": 5432,
     "user": "postgres",
     "pass": "password",
     "name": "postgres"
   },
   "rabbit": {
-    "host": "host.docker.internal",
+    "host": "rabbit",
     "port": 5672,
     "user": "guest",
     "pass": "guest"
